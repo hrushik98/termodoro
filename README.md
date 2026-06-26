@@ -3,7 +3,6 @@
 # Termodoro
 A minimalist terminal Pomodoro timer for focused work sessions.
 
-![Demo](./assets/demo_new.png)
 
 ### Features
 - ✅ Pomodoro timer with focus + break sessions
