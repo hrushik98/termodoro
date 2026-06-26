@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"aimssh/helper"
+	"termodoro/helper"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/lipgloss"
@@ -19,48 +19,118 @@ func (m Model) View() string {
 	var view string
 	switch m.State {
 	case LogoView:
-		view = fmt.Sprintf("\n%s  \n\n\n            %s%s\n\n                  Loading...\n",
-			TitleStyle.SetString(Logo).Render(),
-			GreenColor.Bold(true).Render("ssh"),
-			SelectedItemStyle.Underline(true).PaddingLeft(2).Render("aim.ftp.sh"))
+		view = fmt.Sprintf("\n%s  \n\n\n                  Loading...\n",
+			TitleStyle.SetString(Logo).Render())
 
-	case InputView:
+	case ConfigView:
+		// Render rows
+		var rows [6]string
+		labels := []string{
+			"Preset:     ",
+			"Focus Time: ",
+			"Break Time: ",
+			"Sound:      ",
+			"Animation:  ",
+			"",
+		}
+
+		// Values
+		presetVal := Presets[m.SelectedPreset].Name
+		focusVal := fmt.Sprintf("%d mins", m.FocusMinutes)
+		breakVal := fmt.Sprintf("%d mins", m.BreakMinutes)
+		soundVal := SoundNames[m.SelectedSound]
+		animVal := AnimNames[m.SelectedAnim]
+
+		values := []string{
+			presetVal,
+			focusVal,
+			breakVal,
+			soundVal,
+			animVal,
+			"Start Session",
+		}
+
+		for i := 0; i < 6; i++ {
+			isSelected := (m.ConfigCursor == i)
+			var rowStr string
+
+			if i == 5 {
+				// Start Button
+				if isSelected {
+					rowStr = SelectedItemStyle.Render("   ▶ [ START SESSION ] ◀")
+				} else {
+					rowStr = lipgloss.NewStyle().Foreground(lipgloss.Color("242")).Render("     [ START SESSION ]")
+				}
+			} else {
+				// Label styling
+				label := labels[i]
+				var valStr string
+				if isSelected {
+					valStr = SelectedItemStyle.Render(fmt.Sprintf("◀  %s  ▶", values[i]))
+					rowStr = fmt.Sprintf("  %s %s%s", SelectedItemStyle.Render("▶"), SelectedItemStyle.Render(label), valStr)
+				} else {
+					valStr = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).Render(fmt.Sprintf("[ %s ]", values[i]))
+					rowStr = fmt.Sprintf("    %s%s", lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render(label), valStr)
+				}
+			}
+			rows[i] = rowStr
+		}
+
+		content := fmt.Sprintf(
+			"\n  %s\n\n%s\n%s\n%s\n%s\n%s\n\n%s\n\n\n  %s\n",
+			lipgloss.NewStyle().Foreground(lipgloss.Color("#bfedc1")).Bold(true).Render("CONFIGURATION & PRESETS"),
+			rows[0],
+			rows[1],
+			rows[2],
+			rows[3],
+			rows[4],
+			rows[5],
+			lipgloss.NewStyle().Faint(true).Render("Use ↑↓ to navigate • ←→ to adjust • Enter to start"),
+		)
+
 		view = fmt.Sprintf(
 			"%s \n\n%s",
 			TitleStyle.Render(),
-			PaddingLeftStyle.Render(
-				fmt.Sprintf("%s\n%s",
-					HeightStyle.Render(
-						fmt.Sprintf("%s \n\n%s\n\n%s \n\n%s",
-							ListTitleStyle.Render("Time in minute: *"),
-							m.Input.View(),
-							BrownColor.Render("Session:"),
-							m.WorkingOn.View(),
-						),
-					),
-					m.helpView())))
-
-	case ListView:
-		view = fmt.Sprintf(
-			"%s \n\n%s%s%s",
-			TitleStyle.Render(),
-			m.List.View(),
-			DotStyle,
-			m.List.Help.ShortHelpView([]key.Binding{m.Keymap.Back}),
+			PaddingLeftStyle.Render(content),
 		)
 
 	case TimerView:
-		text := "Session Ended, Press (r) or (n)"
-		if !m.TimedOut {
-			text = formatTime(int(m.Timer.Timeout.Minutes())) + " : " + formatTime(int(m.Timer.Timeout.Seconds())%60)
+		if AnimNames[m.SelectedAnim] == "BigClock" {
+			return renderBigClockView(m)
 		}
+
+		totalDuration := time.Duration(m.FocusMinutes) * time.Minute
+		if m.IsBreak {
+			totalDuration = time.Duration(m.BreakMinutes) * time.Minute
+		}
+
+		sessionLabel := "Focus Session"
+		if m.IsBreak {
+			sessionLabel = "Break Session"
+		}
+
+		var timerText string
+		var actionText string
+
+		if m.TimedOut {
+			timerText = "00 : 00"
+			if !m.IsBreak {
+				actionText = "Focus Ended! Press [Space] for Break"
+			} else {
+				actionText = "Break Ended! Press [Space] for Focus"
+			}
+		} else {
+			timerText = formatTime(int(m.Timer.Timeout.Minutes())) + " : " + formatTime(int(m.Timer.Timeout.Seconds())%60)
+			actionText = "Session: " + sessionLabel
+		}
+
 		view = fmt.Sprintf(
 			"%s \n\n %s",
 			TitleStyle.Render(),
 			PaddingLeftStyle.Render(fmt.Sprintf("%s\n%s%s\n%s",
-				helper.Center(text, AppWidth-10),
-				m.DrawASCII(m.Minute, m.Timer.Timeout),
-				helper.Center("Session: "+m.Session, AppWidth-8),
+				helper.Center(timerText, AppWidth-10),
+				m.DrawASCII(totalDuration, m.Timer.Timeout),
+				helper.Center(actionText, AppWidth-8),
 				m.helpView())))
 	}
 
@@ -70,12 +140,8 @@ func (m Model) View() string {
 // helpView returns the help text for the current state
 func (m Model) helpView() string {
 	switch m.State {
-	case InputView:
-		return "\n" + m.Help.ShortHelpView([]key.Binding{
-			m.Keymap.Enter,
-			m.Keymap.Back,
-			m.Keymap.CtrlC,
-		})
+	case ConfigView:
+		return ""
 	}
 
 	return "\n" + m.Help.ShortHelpView([]key.Binding{
@@ -93,7 +159,7 @@ func (m Model) DrawASCII(total, remaining time.Duration) string {
 	if n == 0 {
 		return ""
 	}
-	if m.SelectedItem != "Flow" {
+	if AnimNames[m.SelectedAnim] != "Flow" {
 		return m.AsciiArt.NextAndString(int(percentageDifference(total, remaining)))
 	}
 	return "\n" + GreenColor.Render(m.AsciiArt.NextAndString(0)) + "\n"

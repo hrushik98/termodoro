@@ -1,4 +1,4 @@
-// Package helper provides utility functions for the AimSSH application,
+// Package helper provides utility functions for the Termodoro application,
 // including string manipulation, canvas layering, and terminal commands.
 package helper
 

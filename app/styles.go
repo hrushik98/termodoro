@@ -1,11 +1,9 @@
-// Package app provides the core application logic for AimSSH,
-// a terminal-based Pomodoro timer that can run locally or as an SSH server.
 package app
 
 import (
 	"fmt"
 
-	"aimssh/helper"
+	"termodoro/helper"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -14,12 +12,12 @@ import (
 const (
 	DotChar  = " • "
 	AppWidth = 50
-	Logo     = `    _    ___ __  __   ____ ____  _   _ 
-   / \  |_ _|  \/  | / ___/ ___|| | | |
-  / _ \  | || |\/| | \___ \___ \| |_| |
- / ___ \ | || |  | |  ___) |__) |  _  |
-/_/   \_\___|_|  |_| |____/____/|_| |_|
-                                              `
+	Logo     = `  _____                         _
+ |_   _|__ _ __ _ __ ___   ___ | | ___  _ __ ___
+   | |/ _ \ '__| '_ ` + "`" + ` _ \ / _ \| |/ _ \| '__/ _ \
+   | |  __/ |  | | | | | | (_) | | (_) | | | (_) |
+   |_|\___|_|  |_| |_| |_|\___/|_|\___/|_|  \___/
+                                                    `
 )
 
 // Style definitions for the application UI
@@ -27,7 +25,7 @@ var (
 	AppStyle          = lipgloss.NewStyle().Padding(1, 2).Border(lipgloss.RoundedBorder(), true, true, true, true).Width(AppWidth)
 	HeightStyle       = lipgloss.NewStyle().Height(21)
 	PaddingLeftStyle  = lipgloss.NewStyle().PaddingLeft(2)
-	TitleStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#49beaa")).Bold(true).SetString(helper.Center(`<AIM SSH>`, AppWidth-4)).AlignHorizontal(lipgloss.Center)
+	TitleStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#49beaa")).Bold(true).SetString(helper.Center(`<TERMODORO>`, AppWidth-4)).AlignHorizontal(lipgloss.Center)
 	ListTitleStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#bfedc1")).PaddingLeft(-10)
 	ItemStyle         = lipgloss.NewStyle().PaddingLeft(4)
 	SelectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("#CFF27E"))
@@ -37,10 +35,10 @@ var (
 )
 
 // GitLink is the styled GitHub repository link
-var GitLink = GreenColor.Render("https://github.com/sairash/aimssh")
+var GitLink = GreenColor.Render("https://github.com/hrushik98/termodoro")
 
 // EndInfo is the message displayed when the application exits
 var EndInfo = fmt.Sprintf("\n Thanks for using %s! \n Give a star %s \n Made By     %s\n",
-	lipgloss.NewStyle().Foreground(lipgloss.Color("#49beaa")).Bold(true).Render("<AIM SSH>"),
+	lipgloss.NewStyle().Foreground(lipgloss.Color("#49beaa")).Bold(true).Render("<TERMODORO>"),
 	GitLink,
 	GreenColor.Render("https://sairashgautam.com.np/"))

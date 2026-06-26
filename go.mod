@@ -1,4 +1,4 @@
-module aimssh
+module termodoro
 
 go 1.24.0
 
@@ -6,9 +6,6 @@ require (
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.3.4
 	github.com/charmbracelet/lipgloss v1.0.0
-	github.com/charmbracelet/log v0.4.0
-	github.com/charmbracelet/ssh v0.0.0-20250128164007-98fd5ae11894
-	github.com/charmbracelet/wish v1.4.6
 	github.com/gen2brain/beeep v0.0.0-20240516210008-9c006672e7f4
 	github.com/muesli/mango-cobra v1.3.0
 	github.com/muesli/roff v0.1.0

@@ -1,12 +1,11 @@
-// AimSSH is a terminal-based Pomodoro timer application that can run
-// locally as a TUI or as an SSH server for remote access.
+// Termodoro is a terminal-based Pomodoro timer.
 package main
 
 import (
 	"fmt"
 	"os"
 
-	"aimssh/app"
+	"termodoro/app"
 
 	tea "github.com/charmbracelet/bubbletea"
 	mcobra "github.com/muesli/mango-cobra"
@@ -14,15 +13,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	version = "0.1.1"
-
-	sshHost string
-	sshPort string
-)
+var version = "0.1.1"
 
 func main() {
-
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -30,28 +23,16 @@ func main() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "aimssh",
-	Short: "AimSSH is a terminal-based Pomodoro timer",
+	Use:   "termodoro",
+	Short: "Termodoro is a terminal Pomodoro timer",
 	Run: func(cmd *cobra.Command, args []string) {
 		runTUI()
 	},
 }
 
-var sshCmd = &cobra.Command{
-	Use:   "ssh",
-	Short: "Run AimSSH as an SSH server",
-	Run: func(cmd *cobra.Command, args []string) {
-		cfg := app.DefaultServerConfig()
-		cfg.Host = sshHost
-		cfg.Port = sshPort
-
-		app.RunServer(cfg)
-	},
-}
-
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version of AimSSH",
+	Short: "Print the version of Termodoro",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(version)
 	},
@@ -72,30 +53,13 @@ var genManCmd = &cobra.Command{
 }
 
 func init() {
-	sshCmd.Flags().StringVarP(
-		&sshHost,
-		"host",
-		"u",
-		"0.0.0.0",
-		"Host address to run the SSH server on",
-	)
-
-	sshCmd.Flags().StringVarP(
-		&sshPort,
-		"port",
-		"p",
-		"13234",
-		"Port to run the SSH server on",
-	)
-
-	rootCmd.AddCommand(sshCmd)
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(genManCmd)
 }
 
 func runTUI() {
 	p := tea.NewProgram(
-		app.NewModel(nil, false),
+		app.NewModel(),
 		tea.WithAltScreen(),
 	)
 

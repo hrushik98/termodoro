@@ -1,46 +1,28 @@
 <img src="./assets/logo.png" width="100" />
 
-# Aim SSH
-Mulitple Productive __`Terminal SSH Application`__.
-
-[Official Website](https://aim.ftp.sh)
-
-
-To use the application:
-``` sh
-ssh aim.ftp.sh
-```
-
-<br/>
-<br/>
-
-
-![GitHub Release](https://img.shields.io/github/v/release/sairash/aimssh) ![](https://img.shields.io/github/go-mod/go-version/sairash/aimssh) ![](https://img.shields.io/github/languages/code-size/sairash/aimssh) ![](https://img.shields.io/github/license/sairash/aimssh)  [![Go Report Card](https://goreportcard.com/badge/github.com/sairash/aimssh)](https://goreportcard.com/report/github.com/sairash/aimssh) 
-
-
+# Termodoro
+A terminal Pomodoro timer for focused work sessions.
 
 ![Demo](./assets/demo-small-screen.png)
 
+Introducing a fresh take on productivity — a minimalist terminal app for the tech-savvy professional. Keep your focus on the task without the clutter of traditional apps.
 
-Introducing a fresh take on productivity, a unique terminal productivity app designed specifically for the terminal enthusiasts and tech-savvy professionals.
-
-This minimalist design keeps your aim on tasks without the clutter of traditional apps.
-
-### Planned and Added
-- ✅ Timer
-- ❌ Todo List similar to todist
+### Features
+- ✅ Pomodoro timer with focus + break sessions
+- ✅ 7 visual animations to choose from
+- ✅ 6 sound options (including silent)
+- ✅ Config presets (Classic, Short, Long, Custom)
+- ✅ Desktop notifications
+- ❌ Todo List
 - ❌ Notes Taking
 - ❌ Stats
 
 
 ---
 
-__Visual Options:__
+## Visual Options
 
-__Note:__ The screenshots are before the rebranding (Updating soon)
-
-
-Visual Effects are the visual aspects of the timer to make every sessions intresting. Here are some of the available visual options. 
+Visual effects make every session interesting. Choose one on the config screen.
 
 
 <details open>
@@ -49,7 +31,7 @@ Visual Effects are the visual aspects of the timer to make every sessions intres
 
 <img src="./assets/tree.gif" width="400" />
 
-A random procedurally generated tree everytime you start a session.
+A random procedurally generated tree every time you start a session.
 </details>
 
 <details open>
@@ -58,9 +40,8 @@ A random procedurally generated tree everytime you start a session.
 
 <img src="./assets/flow.gif" width="400" />
 
-A guy who is rowing through the _"Time River"_.
+A rower crossing the _"Time River"_.
 </details>
-
 
 <details open>
 <summary>☕ Coffee</summary>
@@ -68,91 +49,89 @@ A guy who is rowing through the _"Time River"_.
 
 <img src="./assets/coffee.gif" width="400" />
 
-A coffee mug that filles up over time.
+A coffee mug that fills up as time passes.
+</details>
+
+<details open>
+<summary>🔥 Campfire</summary>
+<br>
+
+Flickering ASCII flames with a glowing log. The fire cycles through yellow, orange, and red — updates every 250ms.
+</details>
+
+<details open>
+<summary>🌧️ Rain</summary>
+<br>
+
+Raindrops falling down the screen in shades of blue. A calming, ambient effect — scrolls every 100ms.
+</details>
+
+<details open>
+<summary>🌅 Sunrise</summary>
+<br>
+
+A sun that rises from the horizon as your session progresses (0% = dawn red, 100% = noon yellow). Tied to timer percentage.
+</details>
+
+<details open>
+<summary>🕐 BigClock</summary>
+<br>
+
+Full-screen pixel-art digit display with a live progress bar and session label. Bypasses the normal UI box for a clean, immersive view.
+
+```
+ ██████  ██████   ██   ██████  ██████
+ ██  ██  ██  ██  ████  ██      ██
+ ██  ██  ██  ██   ██   ████    ████
+ ██████  ██████   ██       ██      ██
+                  ██   ██  ██  ██  ██
+                  ██   ██████  ██████
+```
+
+Digits dim when the timer is paused.
 </details>
 
 
---- 
+---
 
-### How to use aimssh:
+## How to install Termodoro
 
-__STEP [1]:__
+__Linux/Mac:__
 
-Run the following comamnd in your terminal
-
-<img src="./assets/sshaimftpsh.png" width="500" />
-
-__STEP [2]:__
-
-Enter the time in minutes and also session "Title"
-
-<img src="./assets/step2.png" width="500" />
-
-
-__STEP [3]:__
-
-Select a visual option for the session
-
-<img src="./assets/step3.png" width="500" />
-
-__STEP [4]:__
-
-Work!
-
-<img src="./assets/flow.png" width="500" />
-
-----
-
-
-### How to install aimssh locally:
-
-To install aimssh locally run the following command.
-
-__Linux/MAC:__
-
-``` sh
-curl -sSL https://gist.githubusercontent.com/sairash/f07c0d194c755fdd6c4fe39d0010ec30/raw | bash
-```
-
-__Windows:__
-
-``` sh
-curl -sSL https://gist.githubusercontent.com/sairash/d6ce0c6a627f932dd105f17209d1b0e2/raw/20c42bfbafb09bf495cda7a77fe33fcab0055e6a/install_pomo.ps1 | powershell -c -
-```
-
-
-Or use it directly
-
-
-
-``` sh
-git clone https://github.com/sairash/aimssh
-```
-
-``` sh
-cd aimssh
-```
-
-``` sh
-go build
-```
-
-And,
-
-__Run aimssh as client:__
 ```sh
-aimssh
+git clone https://github.com/hrushik98/termodoro
+cd termodoro
+go build -o binary/termodoro
 ```
 
-__Run aimssh as server:__
+__Run:__
 ```sh
-aimssh ssh --host 0.0.0.0 --port 13234
+./binary/termodoro
 ```
 
-__or__
+Or with make:
+
 ```sh
-aimssh ssh --host=0.0.0.0 --port=13234
+make run
 ```
+
+---
+
+## Controls
+
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | Navigate config options |
+| `←` / `→` | Adjust selected value |
+| `Enter` | Start session |
+| `Space` | Pause / Resume / Next session |
+| `r` | Restart timer |
+| `n` | New session (back to config) |
+| `q` | Quit |
+| `Ctrl+B` | Back to config from timer |
+
 <br/>
 
-Made With ❤️ by <a href="https://sairashgautam.com.np" target="_blank" class="border-b-2 text-[#CFF27E]" rel="noopener noreferrer">Sairash</a>.
+### Credits
+
+This project is a fork of [aimssh](https://github.com/sairash/aimssh) by [Sairash](https://sairashgautam.com.np).

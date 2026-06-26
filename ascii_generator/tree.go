@@ -2,7 +2,7 @@
 package ascii_generator
 
 import (
-	"aimssh/helper"
+	"termodoro/helper"
 	"math"
 	"math/rand"
 	"strings"
@@ -46,8 +46,8 @@ type Tree struct {
 }
 
 // initCanvas creates a new Tree with an initialized canvas
-func initCanvas(width, height int) Tree {
-	t := Tree{
+func initCanvas(width, height int) *Tree {
+	t := &Tree{
 		height: height,
 		width:  width,
 		dirty:  true,
@@ -248,5 +248,5 @@ func GenerateTree(width, height int) *Tree {
 		},
 	}
 
-	return &t
+	return t
 }

@@ -1,15 +1,12 @@
 OUTPUT_DIR := binary
-BINARY_NAME := aimssh
+BINARY_NAME := termodoro
 
 PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
 
 build:
 	go build -o $(OUTPUT_DIR)/$(BINARY_NAME)
 
-ssh: build
-	./$(OUTPUT_DIR)/$(BINARY_NAME) ssh
-
-pomo: build
+run: build
 	./$(OUTPUT_DIR)/$(BINARY_NAME)
 
 test:
@@ -24,4 +21,4 @@ $(PLATFORMS):
 clean:
 	rm -rf $(OUTPUT_DIR)
 
-.PHONY: build ssh pomo test cross-build clean $(PLATFORMS)
+.PHONY: build run test cross-build clean $(PLATFORMS)

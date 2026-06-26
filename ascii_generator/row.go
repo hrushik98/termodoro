@@ -2,7 +2,7 @@
 package ascii_generator
 
 import (
-	"aimssh/helper"
+	"termodoro/helper"
 	"math/rand"
 	"sync"
 	"time"

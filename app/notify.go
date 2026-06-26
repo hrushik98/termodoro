@@ -1,28 +1,70 @@
 package app
 
 import (
-	"github.com/charmbracelet/ssh"
-	"github.com/charmbracelet/wish"
+	"time"
+
 	"github.com/gen2brain/beeep"
 )
 
-// SendNotification sends a desktop notification.
-// For local mode, it uses beeep. For SSH mode, it attempts to use
-// the client's notification system (currently supports Linux via notify-send).
-func SendNotification(sess ssh.Session, title, body string, isSSH bool) {
-	if !isSSH {
-		beeep.Alert(title, body, "assets/logo.png")
+// Sound option constants
+const (
+	SoundDefault = iota
+	SoundHighBeep
+	SoundLowBeep
+	SoundDoubleBeep
+	SoundMelody
+	SoundSilent
+)
+
+// SoundNames maps sound index to human-readable names
+var SoundNames = []string{
+	"Default Alert",
+	"High Beep",
+	"Low Beep",
+	"Double Beep",
+	"Melody",
+	"Silent",
+}
+
+// PlaySound plays a custom sound based on the sound index in a background goroutine
+func PlaySound(soundType int) {
+	go func() {
+		switch soundType {
+		case SoundDefault:
+			// Default alert/beep
+			_ = beeep.Beep(800, 200)
+		case SoundHighBeep:
+			_ = beeep.Beep(1200, 300)
+		case SoundLowBeep:
+			_ = beeep.Beep(350, 600)
+		case SoundDoubleBeep:
+			_ = beeep.Beep(800, 150)
+			time.Sleep(100 * time.Millisecond)
+			_ = beeep.Beep(800, 150)
+		case SoundMelody:
+			notes := []float64{523.25, 659.25, 784.00} // C5, E5, G5
+			for i, note := range notes {
+				_ = beeep.Beep(note, 150)
+				if i < len(notes)-1 {
+					time.Sleep(80 * time.Millisecond)
+				}
+			}
+		case SoundSilent:
+			// Do nothing
+		}
+	}()
+}
+
+// SendNotification sends a desktop notification and plays the configured sound
+func SendNotification(title, body string, soundType int) {
+	// If silent, just use beeep.Notify (does not force sound)
+	if soundType == SoundSilent {
+		_ = beeep.Notify(title, body, "assets/logo.png")
 		return
 	}
 
-	// Only attempt SSH notification if we have a valid session
-	if sess == nil {
-		return
-	}
-
-	// Check the client's operating system and send notification accordingly
-	switch sess.Context().Value("operating_system") {
-	case "linux":
-		wish.Command(sess, "notify-send", "-a", "Aimssh", title, body).Run()
-	}
+	// Send desktop notification
+	_ = beeep.Notify(title, body, "assets/logo.png")
+	// Play sound
+	PlaySound(soundType)
 }

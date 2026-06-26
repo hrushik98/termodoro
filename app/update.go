@@ -2,13 +2,11 @@ package app
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
-	"aimssh/helper"
+	"termodoro/helper"
 
 	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/timer"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -27,17 +25,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case tea.KeyCtrlB:
 			switch m.State {
-			case InputView:
-				if m.WorkingOn.Focused() {
-					m.WorkingOn.Blur()
-					m.Input.Focus()
-				}
-			case ListView:
-				m.State = InputView
-				m.Input.Blur()
-				m.WorkingOn.Focus()
+			case ConfigView:
+				// No back from config screen
 			case TimerView:
-				m.State = ListView
+				m.State = ConfigView
+				m.Timer.Stop()
 			}
 		}
 	}
@@ -45,10 +37,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m.State {
 	case LogoView:
 		return updateLogo(msg, m)
-	case InputView:
-		return updateInput(msg, m)
-	case ListView:
-		return updateList(msg, m)
+	case ConfigView:
+		return updateConfig(msg, m)
 	case TimerView:
 		return updateTimer(msg, m)
 	default:
@@ -65,75 +55,130 @@ func updateLogo(msg tea.Msg, m Model) (tea.Model, tea.Cmd) {
 		return m, cmd
 	case timer.TimeoutMsg:
 		m.LoadingTimer.Stop()
-		m.State = InputView
-		return m, textinput.Blink
+		m.State = ConfigView
+		return m, nil
 	}
 	return m, nil
 }
 
-// updateInput handles updates for the input view (time and session name)
-func updateInput(msg tea.Msg, m Model) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-
+// updateConfig handles configuration input navigation and updates
+func updateConfig(msg tea.Msg, m Model) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyEnter:
-			if m.Input.Focused() {
-				if m.Input.Value() != "" {
-					min, err := strconv.Atoi(m.Input.Value())
-					if err != nil {
-						m.Err = err
-						m.Quitting = true
-						return m, tea.Quit
-					}
-					m.Minute = time.Duration(min) * time.Minute
-					m.Input.Blur()
-					return m, m.WorkingOn.Focus()
-				}
-			} else {
-				if m.WorkingOn.Value() != "" {
-					m.Session = m.WorkingOn.Value()
-				}
-				m.State = ListView
+		switch msg.String() {
+		case "up", "k":
+			m.ConfigCursor--
+			if m.ConfigCursor < 0 {
+				m.ConfigCursor = 5
 			}
+
+		case "down", "j", "tab":
+			m.ConfigCursor++
+			if m.ConfigCursor > 5 {
+				m.ConfigCursor = 0
+			}
+
+		case "left", "h":
+			switch m.ConfigCursor {
+			case 0: // Preset
+				m.SelectedPreset--
+				if m.SelectedPreset < 0 {
+					m.SelectedPreset = len(Presets) - 1
+				}
+				// Copy values from preset
+				p := Presets[m.SelectedPreset]
+				m.FocusMinutes = p.FocusMinutes
+				m.BreakMinutes = p.BreakMinutes
+				m.SelectedSound = p.Sound
+				m.SelectedAnim = p.Animation
+
+			case 1: // Focus Minutes
+				if m.FocusMinutes > 1 {
+					m.FocusMinutes--
+					m.SelectedPreset = len(Presets) - 1 // Custom
+				}
+
+			case 2: // Break Minutes
+				if m.BreakMinutes > 1 {
+					m.BreakMinutes--
+					m.SelectedPreset = len(Presets) - 1 // Custom
+				}
+
+			case 3: // Sound
+				m.SelectedSound--
+				if m.SelectedSound < 0 {
+					m.SelectedSound = len(SoundNames) - 1
+				}
+				PlaySound(m.SelectedSound)
+				m.SelectedPreset = len(Presets) - 1 // Custom
+
+			case 4: // Animation
+				m.SelectedAnim--
+				if m.SelectedAnim < 0 {
+					m.SelectedAnim = len(AnimNames) - 1
+				}
+				m.SelectedPreset = len(Presets) - 1 // Custom
+			}
+
+		case "right", "l":
+			switch m.ConfigCursor {
+			case 0: // Preset
+				m.SelectedPreset++
+				if m.SelectedPreset >= len(Presets) {
+					m.SelectedPreset = 0
+				}
+				// Copy values from preset
+				p := Presets[m.SelectedPreset]
+				m.FocusMinutes = p.FocusMinutes
+				m.BreakMinutes = p.BreakMinutes
+				m.SelectedSound = p.Sound
+				m.SelectedAnim = p.Animation
+
+			case 1: // Focus Minutes
+				if m.FocusMinutes < 120 {
+					m.FocusMinutes++
+					m.SelectedPreset = len(Presets) - 1 // Custom
+				}
+
+			case 2: // Break Minutes
+				if m.BreakMinutes < 60 {
+					m.BreakMinutes++
+					m.SelectedPreset = len(Presets) - 1 // Custom
+				}
+
+			case 3: // Sound
+				m.SelectedSound++
+				if m.SelectedSound >= len(SoundNames) {
+					m.SelectedSound = 0
+				}
+				PlaySound(m.SelectedSound)
+				m.SelectedPreset = len(Presets) - 1 // Custom
+
+			case 4: // Animation
+				m.SelectedAnim++
+				if m.SelectedAnim >= len(AnimNames) {
+					m.SelectedAnim = 0
+				}
+				m.SelectedPreset = len(Presets) - 1 // Custom
+			}
+
+		case "enter":
+			// Start Focus Timer
+			m.IsBreak = false
+			duration := time.Duration(m.FocusMinutes) * time.Minute
+			m.Timer = timer.NewWithInterval(duration, time.Millisecond)
+			m.State = TimerView
+			m.AsciiArt = m.GenerateASCII()
+			m.TimedOut = false
+
+			body := fmt.Sprintf("Focus timer set for %d minutes.", m.FocusMinutes)
+			SendNotification("Focus Session Started", body, m.SelectedSound)
+
+			return m, m.Timer.Init()
 		}
 	}
 
-	if m.Input.Focused() {
-		m.Input, cmd = m.Input.Update(msg)
-	} else {
-		m.WorkingOn, cmd = m.WorkingOn.Update(msg)
-	}
-
-	return m, cmd
-}
-
-// updateList handles updates for the visual option selection view
-func updateList(msg tea.Msg, m Model) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyEnter:
-			if selected, ok := m.List.SelectedItem().(Item); ok {
-				m.SelectedItem = string(selected)
-				m.Timer = timer.NewWithInterval(m.Minute, time.Millisecond)
-				m.State = TimerView
-				m.AsciiArt = m.GenerateASCII()
-				m.Keymap.Start.SetEnabled(false)
-
-				body := fmt.Sprintf("Timer set for %d minutes.", int(m.Timer.Timeout.Minutes()))
-				SendNotification(m.SessionSSH, helper.TimerStartedTitle, body, m.RunAsSSH)
-
-				return m, m.Timer.Init()
-			}
-		}
-	}
-
-	m.List, cmd = m.List.Update(msg)
-	return m, cmd
+	return m, nil
 }
 
 // updateTimer handles updates for the timer view
@@ -146,9 +191,16 @@ func updateTimer(msg tea.Msg, m Model) (tea.Model, tea.Cmd) {
 
 	case timer.TimeoutMsg:
 		m.TimedOut = true
-		body := "The timer has ended."
-		SendNotification(m.SessionSSH, helper.TimerEndedTitle, body, m.RunAsSSH)
-		return m, helper.BeepCmd()
+		var title, body string
+		if !m.IsBreak {
+			title = "Focus Session Ended"
+			body = fmt.Sprintf("Time for a %d minute break!", m.BreakMinutes)
+		} else {
+			title = "Break Session Ended"
+			body = fmt.Sprintf("Time to focus for %d minutes!", m.FocusMinutes)
+		}
+		SendNotification(title, body, m.SelectedSound)
+		return m, nil
 
 	case timer.StartStopMsg:
 		var cmd tea.Cmd
@@ -167,22 +219,53 @@ func updateTimer(msg tea.Msg, m Model) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.Keymap.Reset):
 			m.TimedOut = false
 			m.AsciiArt = m.GenerateASCII()
-			m.Timer.Timeout = m.Minute
+			duration := time.Duration(m.FocusMinutes) * time.Minute
+			if m.IsBreak {
+				duration = time.Duration(m.BreakMinutes) * time.Minute
+			}
+			m.Timer.Timeout = duration
 
-			body := fmt.Sprintf("Timer set for %d minutes.", int(m.Timer.Timeout.Minutes()))
-			SendNotification(m.SessionSSH, helper.TimerRestartedTitle, body, m.RunAsSSH)
+			sessionName := "Focus"
+			if m.IsBreak {
+				sessionName = "Break"
+			}
+			body := fmt.Sprintf("%s session restarted.", sessionName)
+			SendNotification("Timer Restarted", body, m.SelectedSound)
 
 			return m, m.Timer.Start()
 
 		case key.Matches(msg, m.Keymap.New):
 			m.TimedOut = false
-			m.State = InputView
-			m.WorkingOn.Blur()
-			m.Input.Focus()
+			m.State = ConfigView
 			m.Timer.Stop()
 			return m, nil
 
 		case key.Matches(msg, m.Keymap.Start, m.Keymap.Stop):
+			if m.TimedOut {
+				// If timed out, Space key transitions to the next session (Focus -> Break or Break -> Focus)
+				m.IsBreak = !m.IsBreak
+				m.TimedOut = false
+				m.AsciiArt = m.GenerateASCII()
+
+				var duration time.Duration
+				var title, body string
+
+				if m.IsBreak {
+					duration = time.Duration(m.BreakMinutes) * time.Minute
+					title = "Break Session Started"
+					body = fmt.Sprintf("Break timer set for %d minutes.", m.BreakMinutes)
+				} else {
+					duration = time.Duration(m.FocusMinutes) * time.Minute
+					title = "Focus Session Started"
+					body = fmt.Sprintf("Focus timer set for %d minutes.", m.FocusMinutes)
+				}
+
+				m.Timer = timer.NewWithInterval(duration, time.Millisecond)
+				SendNotification(title, body, m.SelectedSound)
+				return m, tea.Batch(m.Timer.Init(), m.Timer.Start())
+			}
+
+			// Otherwise toggle pause/play
 			return m, m.Timer.Toggle()
 		}
 	}
