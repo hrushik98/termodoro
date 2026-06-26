@@ -79,14 +79,7 @@ A sun that rises from the horizon as your session progresses (0% = dawn red, 100
 
 Full-screen pixel-art digit display with a live progress bar and session label. Bypasses the normal UI box for a clean, immersive view.
 
-```
- ██████  ██████   ██   ██████  ██████
- ██  ██  ██  ██  ████  ██      ██
- ██  ██  ██  ██   ██   ████    ████
- ██████  ██████   ██       ██      ██
-                  ██   ██  ██  ██  ██
-                  ██   ██████  ██████
-```
+
 
 Digits dim when the timer is paused.
 </details>
