@@ -66,6 +66,15 @@ homebrew_casks:
     commit_author:
       name: goreleaser-bot
       email: goreleaser-bot@users.noreply.github.com
+    # The binary is unsigned (no paid Apple Developer cert), so macOS quarantines
+    # it on download. Strip the quarantine bit on install so users don't get the
+    # "Apple could not verify termodoro" Gatekeeper dialog.
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/termodoro"]
+          end
 
 # Windows: Scoop manifest pushed to hrushik98/scoop-bucket.
 # Install: scoop bucket add hrushik98 https://github.com/hrushik98/scoop-bucket
