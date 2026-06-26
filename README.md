@@ -3,11 +3,11 @@
 # Termodoro
 A minimalist terminal Pomodoro timer for focused work sessions.
 
-![Demo](./assets/demo-small-screen.png)
+![Demo](./assets/demo_new.png)
 
 ### Features
 - ✅ Pomodoro timer with focus + break sessions
-- ✅ 7 visual animations to choose from
+- ✅ 6 visual animations to choose from
 - ✅ 6 sound options (including silent)
 - ✅ Config presets (Classic, Short, Long, Custom)
 - ✅ Desktop notifications
@@ -85,6 +85,8 @@ A coffee mug that fills up as time passes.
 <summary>🔥 Campfire</summary>
 <br>
 
+<img src="./assets/campfire.gif" width="400" />
+
 Flickering ASCII flames with a glowing log, cycling through yellow, orange, and red.
 </details>
 
@@ -92,19 +94,16 @@ Flickering ASCII flames with a glowing log, cycling through yellow, orange, and 
 <summary>🌧️ Rain</summary>
 <br>
 
+<img src="./assets/rain.gif" width="400" />
+
 Raindrops falling down the screen in calming shades of blue.
-</details>
-
-<details>
-<summary>🌅 Sunrise</summary>
-<br>
-
-A sun that rises as your session progresses (dawn red → noon yellow), tied to the timer percentage.
 </details>
 
 <details>
 <summary>🕐 BigClock</summary>
 <br>
+
+<img src="./assets/bigclock.gif" width="400" />
 
 Full-screen pixel-art digits with a live progress bar. Digits dim when paused.
 </details>
