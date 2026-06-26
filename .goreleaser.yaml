@@ -1,0 +1,73 @@
+# Documentation: https://goreleaser.com
+version: 2
+
+project_name: termodoro
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: termodoro
+    main: .
+    binary: termodoro
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      # No Windows/arm64 build (mirrors the Makefile targets).
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - id: termodoro
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_
+      {{- if eq .Os "darwin" }}macOS{{ else }}{{ .Os }}{{ end }}_
+      {{- .Arch }}
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - README.md
+      - LICENCE
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^style:"
+
+homebrew_casks:
+  - name: termodoro
+    repository:
+      owner: hrushik98
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    directory: Casks
+    homepage: "https://github.com/hrushik98/termodoro"
+    description: "Termodoro is a terminal-based Pomodoro timer"
+    commit_author:
+      name: goreleaser-bot
+      email: goreleaser-bot@users.noreply.github.com
+
+release:
+  github:
+    owner: hrushik98
+    name: termodoro

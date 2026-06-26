@@ -13,7 +13,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var version = "0.1.1"
+// version is set at build time via -ldflags "-X main.version=...".
+// GoReleaser injects the git tag; defaults to "dev" for local builds.
+var version = "dev"
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
