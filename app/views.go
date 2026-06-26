@@ -51,6 +51,8 @@ func (m Model) View() string {
 			"Start Session",
 		}
 
+		selectedColor := lipgloss.NewStyle().Foreground(lipgloss.Color("#CFF27E"))
+
 		for i := 0; i < 6; i++ {
 			isSelected := (m.ConfigCursor == i)
 			var rowStr string
@@ -67,8 +69,8 @@ func (m Model) View() string {
 				label := labels[i]
 				var valStr string
 				if isSelected {
-					valStr = SelectedItemStyle.Render(fmt.Sprintf("◀  %s  ▶", values[i]))
-					rowStr = fmt.Sprintf("  %s %s%s", SelectedItemStyle.Render("▶"), SelectedItemStyle.Render(label), valStr)
+					valStr = selectedColor.Render(fmt.Sprintf("◀  %s  ▶", values[i]))
+					rowStr = fmt.Sprintf("  ▶ %s%s", selectedColor.Render(label), valStr)
 				} else {
 					valStr = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).Render(fmt.Sprintf("[ %s ]", values[i]))
 					rowStr = fmt.Sprintf("    %s%s", lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render(label), valStr)
