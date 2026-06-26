@@ -67,6 +67,37 @@ homebrew_casks:
       name: goreleaser-bot
       email: goreleaser-bot@users.noreply.github.com
 
+# Windows: Scoop manifest pushed to hrushik98/scoop-bucket.
+# Install: scoop bucket add hrushik98 https://github.com/hrushik98/scoop-bucket
+#          scoop install termodoro
+scoops:
+  - name: termodoro
+    repository:
+      owner: hrushik98
+      name: scoop-bucket
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    directory: bucket
+    homepage: "https://github.com/hrushik98/termodoro"
+    description: "Termodoro is a terminal-based Pomodoro timer"
+    license: MIT
+    commit_author:
+      name: goreleaser-bot
+      email: goreleaser-bot@users.noreply.github.com
+
+# Linux: .deb/.rpm/.apk packages attached to the GitHub Release.
+nfpms:
+  - id: termodoro
+    package_name: termodoro
+    homepage: "https://github.com/hrushik98/termodoro"
+    description: "Termodoro is a terminal-based Pomodoro timer"
+    maintainer: "Hrushik Reddy <phanihrushik.10@gmail.com>"
+    license: MIT
+    formats:
+      - deb
+      - rpm
+      - apk
+    bindir: /usr/bin
+
 release:
   github:
     owner: hrushik98
