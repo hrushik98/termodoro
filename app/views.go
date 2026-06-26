@@ -20,8 +20,11 @@ func (m Model) View() string {
 	var view string
 	switch m.State {
 	case LogoView:
-		view = fmt.Sprintf("\n%s  \n\n\n                  Loading...\n",
-			TitleStyle.SetString(Logo).Render())
+		view = fmt.Sprintf(
+			"%s \n\n\n%s",
+			TitleStyle.Render(),
+			lipgloss.NewStyle().Faint(true).Render(helper.Center("Loading...", AppWidth-8)),
+		)
 
 	case ConfigView:
 		// Render rows
