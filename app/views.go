@@ -98,6 +98,10 @@ func (m Model) View() string {
 		)
 
 	case TimerView:
+		if AnimNames[m.SelectedAnim] == "BigClock" {
+			return renderBigClockView(m)
+		}
+
 		totalDuration := time.Duration(m.FocusMinutes) * time.Minute
 		if m.IsBreak {
 			totalDuration = time.Duration(m.BreakMinutes) * time.Minute

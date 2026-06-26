@@ -72,6 +72,10 @@ var AnimNames = []string{
 	"Tree",
 	"Flow",
 	"Coffee",
+	"Campfire",
+	"Rain",
+	"Sunrise",
+	"BigClock",
 }
 
 // Model represents the application state
@@ -173,6 +177,12 @@ func (m Model) GenerateASCII() ascii_generator.AsciiArt {
 		return ascii_generator.GenerateCoffee()
 	case "Tree":
 		return ascii_generator.GenerateTree(40, 18)
+	case "Campfire":
+		return ascii_generator.GenerateCampfire()
+	case "Rain":
+		return ascii_generator.GenerateRain(40, 17)
+	case "Sunrise":
+		return ascii_generator.GenerateSunrise(40, 17)
 	default:
 		return ascii_generator.GenerateRow(40, 17)
 	}
