@@ -13,9 +13,9 @@ Introducing a fresh take on productivity — a minimalist terminal app for the t
 - ✅ 6 sound options (including silent)
 - ✅ Config presets (Classic, Short, Long, Custom)
 - ✅ Desktop notifications
-- ❌ Todo List
-- ❌ Notes Taking
-- ❌ Stats
+- ✅ Todo List (Todoist-style, priority levels P1–P3, persistent storage)
+- ✅ Notes Taking (in-session scratchpad)
+- ✅ Stats & Performance (focus streaks, logs, and a trailing 7-day ASCII graph)
 
 
 ---
