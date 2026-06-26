@@ -1,13 +1,17 @@
 package app
 
 import (
+	"os"
 	"time"
 
 	"termodoro/ascii_generator"
 
 	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/timer"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // SessionState represents the current view/state of the application
@@ -17,6 +21,9 @@ const (
 	LogoView SessionState = iota
 	ConfigView
 	TimerView
+	TodoView
+	NotesView
+	StatsView
 )
 
 // Preset represents a configuration preset
@@ -65,18 +72,7 @@ var AnimNames = []string{
 	"Tree",
 	"Flow",
 	"Coffee",
-	"Campfire",
-	"Rain",
-	"Sunrise",
-	"BigClock",
 }
-
-// noopArt satisfies AsciiArt for animations handled entirely in the view layer
-type noopArt struct{}
-
-func (noopArt) Width() int            { return 0 }
-func (noopArt) Height() int           { return 0 }
-func (noopArt) NextAndString(_ int) string { return "" }
 
 // Model represents the application state
 type Model struct {
@@ -100,10 +96,42 @@ type Model struct {
 	AsciiArt     ascii_generator.AsciiArt
 	Quitting     bool
 	TimedOut     bool
+
+	// Todo List
+	Todos       []TodoItem
+	TodoInput   textinput.Model
+	TodoCursor  int
+	TodoAddMode bool
+	Username    string
+
+	// Notes
+	Notes     textarea.Model
+	PrevState SessionState
+
+	// Stats
+	StatsData Stats
 }
 
 // NewModel creates and returns a new Model with default values
 func NewModel() Model {
+	// Initialize Todo Input
+	todoI := textinput.New()
+	todoI.PlaceholderStyle = lipgloss.NewStyle().Faint(true)
+	todoI.Placeholder = "Task title..."
+	todoI.CharLimit = 100
+	todoI.Width = 38
+	todoI.Prompt = "> "
+
+	// Initialize Notes textarea
+	ta := textarea.New()
+	ta.Placeholder = "Jot down your thoughts..."
+	ta.CharLimit = 0
+	ta.SetWidth(AppWidth - 6)
+	ta.SetHeight(14)
+	ta.ShowLineNumbers = false
+
+	username := os.Getenv("USER")
+
 	return Model{
 		State:          LogoView,
 		SelectedPreset: 0, // Classic Pomodoro
@@ -118,6 +146,17 @@ func NewModel() Model {
 		TimedOut:     false,
 		Keymap:       NewKeymap(),
 		Help:         help.New(),
+
+		// Todo list
+		TodoInput:   todoI,
+		Username:    username,
+		Todos:       LoadTodos(username),
+
+		// Notes
+		Notes: ta,
+
+		// Stats
+		StatsData: LoadStats(),
 	}
 }
 
@@ -126,22 +165,15 @@ func (m Model) Init() tea.Cmd {
 	return tea.Batch(m.LoadingTimer.Init(), m.LoadingTimer.Start())
 }
 
-// GenerateASCII creates the appropriate ASCII art based on selected animation
+// GenerateASCII creates the appropriate ASCII art based on selected item
 func (m Model) GenerateASCII() ascii_generator.AsciiArt {
-	switch AnimNames[m.SelectedAnim] {
+	animName := AnimNames[m.SelectedAnim]
+	switch animName {
 	case "Coffee":
 		return ascii_generator.GenerateCoffee()
 	case "Tree":
 		return ascii_generator.GenerateTree(40, 18)
-	case "Campfire":
-		return ascii_generator.GenerateCampfire()
-	case "Rain":
-		return ascii_generator.GenerateRain(40, 15)
-	case "Sunrise":
-		return ascii_generator.GenerateSunrise(40, 15)
-	case "BigClock":
-		return noopArt{}
-	default: // Flow
+	default:
 		return ascii_generator.GenerateRow(40, 17)
 	}
 }

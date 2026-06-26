@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"termodoro/helper"
@@ -85,7 +86,7 @@ func (m Model) View() string {
 			rows[3],
 			rows[4],
 			rows[5],
-			lipgloss.NewStyle().Faint(true).Render("Use ↑↓ to navigate • ←→ to adjust • Enter to start"),
+			lipgloss.NewStyle().Faint(true).Render("Use ↑↓ to navigate • ←→ to adjust • Enter to start • Ctrl+T stats"),
 		)
 
 		view = fmt.Sprintf(
@@ -95,10 +96,6 @@ func (m Model) View() string {
 		)
 
 	case TimerView:
-		if AnimNames[m.SelectedAnim] == "BigClock" {
-			return renderBigClockView(m)
-		}
-
 		totalDuration := time.Duration(m.FocusMinutes) * time.Minute
 		if m.IsBreak {
 			totalDuration = time.Duration(m.BreakMinutes) * time.Minute
@@ -132,9 +129,182 @@ func (m Model) View() string {
 				m.DrawASCII(totalDuration, m.Timer.Timeout),
 				helper.Center(actionText, AppWidth-8),
 				m.helpView())))
+
+	case TodoView:
+		view = fmt.Sprintf(
+			"%s \n\n%s",
+			TitleStyle.Render(),
+			PaddingLeftStyle.Render(
+				fmt.Sprintf("%s\n%s",
+					HeightStyle.Render(m.todoListView()),
+					m.helpView())))
+
+	case NotesView:
+		sessionLabel := "Focus"
+		if m.IsBreak {
+			sessionLabel = "Break"
+		}
+		view = fmt.Sprintf(
+			"%s \n\n%s",
+			TitleStyle.Render(),
+			PaddingLeftStyle.Render(fmt.Sprintf("%s\n\n%s\n\n%s",
+				BrownColor.Render("Notes — "+sessionLabel+":"),
+				m.Notes.View(),
+				m.helpView(),
+			)))
+
+	case StatsView:
+		view = fmt.Sprintf(
+			"%s \n\n%s",
+			TitleStyle.Render(),
+			PaddingLeftStyle.Render(fmt.Sprintf("%s\n\n%s",
+				m.statsBody(),
+				m.helpView(),
+			)))
 	}
 
 	return lipgloss.Place(m.Width, m.Height, lipgloss.Center, lipgloss.Center, AppStyle.Render(view))
+}
+
+// todoListView renders the todo list content
+func (m Model) todoListView() string {
+	taskCount := fmt.Sprintf("  %d task", len(m.Todos))
+	if len(m.Todos) != 1 {
+		taskCount += "s"
+	}
+	header := ListTitleStyle.Render("Todo List") + " " + BrownColor.Render(taskCount) + "\n\n"
+
+	var items string
+	if len(m.Todos) == 0 {
+		items = GreenColor.Render("No tasks yet. Press 'a' to add one.") + "\n"
+	} else {
+		for i, todo := range m.Todos {
+			checkbox := "[ ]"
+			if todo.Done {
+				checkbox = "[✓]"
+			}
+
+			title := todo.Title
+			if todo.Done {
+				title = TodoDoneStyle.Render(title)
+			}
+
+			var prio string
+			switch todo.Priority {
+			case PriorityHigh:
+				prio = " " + TodoHighPriorityStyle.Render("P1")
+			case PriorityMedium:
+				prio = " " + TodoMedPriorityStyle.Render("P2")
+			case PriorityLow:
+				prio = " " + TodoLowPriorityStyle.Render("P3")
+			}
+
+			line := fmt.Sprintf("%s %s%s", checkbox, title, prio)
+			if i == m.TodoCursor {
+				line = SelectedItemStyle.Render(line)
+			} else {
+				line = ItemStyle.Render(line)
+			}
+			items += line + "\n"
+		}
+	}
+
+	var bottom string
+	if m.TodoAddMode {
+		bottom = "\n" + BrownColor.Render("New task:") + "\n" + m.TodoInput.View() + "\n"
+	} else {
+		bottom = "\n" + GreenColor.Render("1/2/3 set priority · 0 clear") + "\n"
+	}
+
+	return header + items + bottom
+}
+
+// statsBody renders the stats dashboard: headline metrics plus a 7-day bar chart.
+func (m Model) statsBody() string {
+	s := m.StatsData
+	if s.TotalSessions() == 0 {
+		return BrownColor.Render("📊 Stats\n\n") +
+			StatMutedStyle.Render("No sessions yet — finish a timer\nto start tracking your focus!")
+	}
+
+	var b strings.Builder
+
+	b.WriteString(BrownColor.Render("📊 Your Focus Stats"))
+	b.WriteString("\n\n")
+
+	b.WriteString(statLine("🔥 Streak", pluralize(s.Streak(), "day", "days")))
+	b.WriteString(statLine("⏱  Total", formatMinutes(s.TotalMinutes())))
+	b.WriteString(statLine("✅ Sessions", fmt.Sprintf("%d", s.TotalSessions())))
+	b.WriteString(statLine("📅 Today",
+		fmt.Sprintf("%d · %s", s.TodaySessions(), formatMinutes(s.TodayMinutes()))))
+
+	b.WriteString("\n")
+	b.WriteString(BrownColor.Render("Last 7 days"))
+	b.WriteString("\n")
+	b.WriteString(renderBarChart(s.Last7Days()))
+
+	return b.String()
+}
+
+// statLine formats a single label/value metric row.
+func statLine(label, value string) string {
+	return StatLabelStyle.Render(fmt.Sprintf("%-12s", label)) +
+		StatValueStyle.Render(value) + "\n"
+}
+
+// renderBarChart renders a horizontal bar chart for the trailing week.
+func renderBarChart(days []DayStat) string {
+	const maxWidth = 16
+
+	max := 0
+	for _, d := range days {
+		if d.Minutes > max {
+			max = d.Minutes
+		}
+	}
+
+	var b strings.Builder
+	for _, d := range days {
+		bar := ""
+		if max > 0 && d.Minutes > 0 {
+			filled := (d.Minutes*maxWidth + max/2) / max
+			if filled == 0 {
+				filled = 1
+			}
+			bar = strings.Repeat("█", filled)
+		}
+
+		barStyle := StatBarStyle
+		if d.Today {
+			barStyle = StatBarToday
+		}
+
+		label := StatLabelStyle.Render(fmt.Sprintf("%-4s", d.Label))
+		value := ""
+		if d.Minutes > 0 {
+			value = " " + StatMutedStyle.Render(formatMinutes(d.Minutes))
+		}
+		b.WriteString(label + barStyle.Render(bar) + value + "\n")
+	}
+	return b.String()
+}
+
+// formatMinutes renders a minute count as "Xh Ym" or "Ym".
+func formatMinutes(total int) string {
+	h := total / 60
+	mm := total % 60
+	if h > 0 {
+		return fmt.Sprintf("%dh %dm", h, mm)
+	}
+	return fmt.Sprintf("%dm", mm)
+}
+
+// pluralize formats a count with the right singular/plural unit.
+func pluralize(n int, singular, plural string) string {
+	if n == 1 {
+		return fmt.Sprintf("%d %s", n, singular)
+	}
+	return fmt.Sprintf("%d %s", n, plural)
 }
 
 // helpView returns the help text for the current state
@@ -142,6 +312,17 @@ func (m Model) helpView() string {
 	switch m.State {
 	case ConfigView:
 		return ""
+	case TodoView:
+		return "\n" + m.Help.ShortHelpView([]key.Binding{
+			m.Keymap.TodoAdd,
+			m.Keymap.TodoToggle,
+			m.Keymap.TodoDelete,
+			m.Keymap.Back,
+		})
+	case NotesView, StatsView:
+		return "\n" + m.Help.ShortHelpView([]key.Binding{
+			m.Keymap.Back,
+		})
 	}
 
 	return "\n" + m.Help.ShortHelpView([]key.Binding{
@@ -150,6 +331,9 @@ func (m Model) helpView() string {
 		m.Keymap.Reset,
 		m.Keymap.Quit,
 		m.Keymap.New,
+		m.Keymap.OpenTodo,
+		m.Keymap.Notes,
+		m.Keymap.Stats,
 	})
 }
 

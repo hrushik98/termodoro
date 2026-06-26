@@ -18,6 +18,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Width = msg.Width
 		m.Height = msg.Height
 	case tea.KeyMsg:
+		// Open special views from TimerView
+		if m.State == TimerView {
+			switch msg.String() {
+			case "t":
+				m.PrevState = TimerView
+				m.State = TodoView
+				return m, nil
+			case "o":
+				m.PrevState = TimerView
+				m.State = NotesView
+				return m, m.Notes.Focus()
+			case "T":
+				m.PrevState = TimerView
+				m.StatsData = LoadStats()
+				m.State = StatsView
+				return m, nil
+			}
+		}
+
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			m.Quitting = true
@@ -30,6 +49,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case TimerView:
 				m.State = ConfigView
 				m.Timer.Stop()
+			case TodoView:
+				m.TodoAddMode = false
+				m.TodoInput.Blur()
+				m.TodoInput.Reset()
+				m.State = m.PrevState
+			case NotesView:
+				m.Notes.Blur()
+				m.State = m.PrevState
+			case StatsView:
+				m.State = m.PrevState
+			}
+
+		case tea.KeyCtrlT:
+			if m.State == ConfigView || m.State == TimerView {
+				m.PrevState = m.State
+				m.StatsData = LoadStats()
+				m.State = StatsView
+				return m, nil
 			}
 		}
 	}
@@ -41,6 +78,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return updateConfig(msg, m)
 	case TimerView:
 		return updateTimer(msg, m)
+	case TodoView:
+		return updateTodo(msg, m)
+	case NotesView:
+		return updateNotes(msg, m)
+	case StatsView:
+		return updateStats(msg, m)
 	default:
 		return m, nil
 	}
@@ -191,6 +234,9 @@ func updateTimer(msg tea.Msg, m Model) (tea.Model, tea.Cmd) {
 
 	case timer.TimeoutMsg:
 		m.TimedOut = true
+		if !m.IsBreak {
+			RecordSession("Focus", m.FocusMinutes)
+		}
 		var title, body string
 		if !m.IsBreak {
 			title = "Focus Session Ended"
@@ -271,4 +317,157 @@ func updateTimer(msg tea.Msg, m Model) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+// handleBackgroundTimer processes timer ticks and timeout events while in sub-views
+func handleBackgroundTimer(msg tea.Msg, m Model) (Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case timer.TickMsg:
+		var cmd tea.Cmd
+		m.Timer, cmd = m.Timer.Update(msg)
+		return m, cmd
+
+	case timer.TimeoutMsg:
+		m.TimedOut = true
+		if !m.IsBreak {
+			RecordSession("Focus", m.FocusMinutes)
+		}
+		var title, body string
+		if !m.IsBreak {
+			title = "Focus Session Ended"
+			body = fmt.Sprintf("Time for a %d minute break!", m.BreakMinutes)
+		} else {
+			title = "Break Session Ended"
+			body = fmt.Sprintf("Time to focus for %d minutes!", m.FocusMinutes)
+		}
+		SendNotification(title, body, m.SelectedSound)
+		m.State = TimerView
+		return m, nil
+	}
+	return m, nil
+}
+
+// updateTodo handles updates for the todo list view
+func updateTodo(msg tea.Msg, m Model) (tea.Model, tea.Cmd) {
+	// First, let background timer process if necessary
+	var timerCmd tea.Cmd
+	var newM Model
+	newM, timerCmd = handleBackgroundTimer(msg, m)
+	if newM.State != TodoView { // State changed (timed out)
+		return newM, timerCmd
+	}
+	m = newM
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if m.TodoAddMode {
+			switch msg.Type {
+			case tea.KeyEnter:
+				title := m.TodoInput.Value()
+				if title != "" {
+					m.Todos = append(m.Todos, TodoItem{
+						Title:    title,
+						Done:     false,
+						Priority: PriorityNone,
+					})
+					SaveTodos(m.Username, m.Todos)
+					m.TodoCursor = len(m.Todos) - 1
+				}
+				m.TodoInput.Reset()
+				m.TodoAddMode = false
+				m.TodoInput.Blur()
+				return m, nil
+			case tea.KeyEscape:
+				m.TodoInput.Reset()
+				m.TodoAddMode = false
+				m.TodoInput.Blur()
+				return m, nil
+			}
+			var cmd tea.Cmd
+			m.TodoInput, cmd = m.TodoInput.Update(msg)
+			return m, tea.Batch(cmd, timerCmd)
+		}
+
+		switch msg.String() {
+		case "a":
+			m.TodoAddMode = true
+			return m, tea.Batch(m.TodoInput.Focus(), timerCmd)
+		case "d":
+			if len(m.Todos) > 0 {
+				m.Todos = append(m.Todos[:m.TodoCursor], m.Todos[m.TodoCursor+1:]...)
+				SaveTodos(m.Username, m.Todos)
+				if m.TodoCursor >= len(m.Todos) && m.TodoCursor > 0 {
+					m.TodoCursor--
+				}
+			}
+		case " ":
+			if len(m.Todos) > 0 {
+				m.Todos[m.TodoCursor].Done = !m.Todos[m.TodoCursor].Done
+				SaveTodos(m.Username, m.Todos)
+			}
+		case "1":
+			if len(m.Todos) > 0 {
+				m.Todos[m.TodoCursor].Priority = PriorityHigh
+				SaveTodos(m.Username, m.Todos)
+			}
+		case "2":
+			if len(m.Todos) > 0 {
+				m.Todos[m.TodoCursor].Priority = PriorityMedium
+				SaveTodos(m.Username, m.Todos)
+			}
+		case "3":
+			if len(m.Todos) > 0 {
+				m.Todos[m.TodoCursor].Priority = PriorityLow
+				SaveTodos(m.Username, m.Todos)
+			}
+		case "0":
+			if len(m.Todos) > 0 {
+				m.Todos[m.TodoCursor].Priority = PriorityNone
+				SaveTodos(m.Username, m.Todos)
+			}
+		}
+
+		switch msg.Type {
+		case tea.KeyUp, tea.KeyLeft:
+			if m.TodoCursor > 0 {
+				m.TodoCursor--
+			}
+		case tea.KeyDown, tea.KeyRight:
+			if m.TodoCursor < len(m.Todos)-1 {
+				m.TodoCursor++
+			}
+		}
+	}
+
+	return m, timerCmd
+}
+
+// updateNotes handles updates for the notes view
+func updateNotes(msg tea.Msg, m Model) (tea.Model, tea.Cmd) {
+	// First, let background timer process if necessary
+	var timerCmd tea.Cmd
+	var newM Model
+	newM, timerCmd = handleBackgroundTimer(msg, m)
+	if newM.State != NotesView { // State changed (timed out)
+		return newM, timerCmd
+	}
+	m = newM
+
+	var cmd tea.Cmd
+	m.Notes, cmd = m.Notes.Update(msg)
+	return m, tea.Batch(cmd, timerCmd)
+}
+
+// updateStats handles updates for the stats view
+func updateStats(msg tea.Msg, m Model) (tea.Model, tea.Cmd) {
+	// First, let background timer process if necessary
+	var timerCmd tea.Cmd
+	var newM Model
+	newM, timerCmd = handleBackgroundTimer(msg, m)
+	if newM.State != StatsView { // State changed (timed out)
+		return newM, timerCmd
+	}
+	m = newM
+
+	return m, timerCmd
 }
