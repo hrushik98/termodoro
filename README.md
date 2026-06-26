@@ -194,5 +194,6 @@ Press <kbd>Shift+T</kbd> (Timer view) or <kbd>Ctrl+T</kbd> (Config view) to view
 
 ### Credits
 
-This project is a fork of [aimssh](https://github.com/sairash/aimssh) by [Sairash](https://sairashgautam.com.np).
+* **Fork Author & Maintainer**: [Hrushik Reddy](https://github.com/hrushik98)
+* **Original Project**: Forked from [aimssh](https://github.com/sairash/aimssh) by [Sairash Gautam](https://sairashgautam.com.np).
 

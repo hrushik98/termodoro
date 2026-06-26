@@ -51,7 +51,8 @@ var (
 var GitLink = GreenColor.Render("https://github.com/hrushik98/termodoro")
 
 // EndInfo is the message displayed when the application exits
-var EndInfo = fmt.Sprintf("\n Thanks for using %s! \n Give a star %s \n Made By     %s\n",
+var EndInfo = fmt.Sprintf("\n Thanks for using %s! \n Give a star %s \n Fork By     %s \n Original By %s\n",
 	lipgloss.NewStyle().Foreground(lipgloss.Color("#49beaa")).Bold(true).Render("<TERMODORO>"),
 	GitLink,
-	GreenColor.Render("https://sairashgautam.com.np/"))
+	GreenColor.Render("Hrushik Reddy"),
+	GreenColor.Render("Sairash Gautam"))
